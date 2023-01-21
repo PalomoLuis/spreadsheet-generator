@@ -1,0 +1,23 @@
+{
+  "name": "sprite-generator",
+  "version": "0.1.0",
+  "description": "a cli tool to generate sprites from images",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "gulp"
+  },
+  "author": "Luis Palomo",
+  "license": "MIT",
+  "dependencies": {
+    "gulp": "^4.0.2",
+    "gulp-imagemin": "^8.0.0",
+    "gulp.spritesmith": "^6.13.0",
+    "plugin-error": "^2.0.1",
+    "spritesmith": "^3.4.0"
+  },
+  "devDependencies": {
+    "gulp-image-sanitizer": "^1.0.0",
+    "sharp": "^0.31.3"
+  }
+}

@@ -1,9 +1,17 @@
-import fs from 'node:fs';
-import ReadLine from 'node:readline';
+import fs from 'fs';
+import ReadLine from 'readline';
 import gulp from 'gulp';
 import spritesmith from 'gulp.spritesmith';
 import imagemin, { mozjpeg, optipng } from 'gulp-imagemin';
 import imageSanitizer from 'gulp-image-sanitizer';
+
+/**
+ * Cosas por hacer:
+ * 1) Sprites muy grandes en jpeg se rompen
+ * 2) Validar inputs de consola y dejar un valor por defecto
+ * 3) Contar files y mostrare en consola la suma de la imagen completa.
+ *    Ejemplo: Si width es 100 y son 10 imágenes + 20 padding por imagen = console.log(1200);
+ */
 
 let imageConfig = {
     width: 300,
@@ -26,7 +34,10 @@ gulp.task('ask', function (done) {
             if(imageConfig.type === 'jpeg') {
                 rl.question('Write the quality from 1 to 100: ', (quality) => {
                     imageConfig.jpgQuality = parseInt(quality);
-                    console.log('Quality: ' + imageConfig.quality);
+                    if(imageConfig.jpgQuality === NaN || imageConfig.jpgQuality === undefined) {
+                        imageConfig.jpgQuality = 70
+                    }
+                    console.log('Quality: ' + imageConfig.jpgQuality);
                     rl.close()
                     done()
                 })
@@ -38,15 +49,19 @@ gulp.task('ask', function (done) {
     })
 });
 
-gulp.task('create-folder', function (cb) {
-    fs.mkdir('./output', { recursive: true }, (err) => {
-        if (err) console.error(err);
-        cb()
-    })
+gulp.task('create-folder', async function (cb) {
+    try {
+        await fs.promises.mkdir('./output', { recursive: true }, (err) => {
+            if (err) console.error(err);
+            cb()
+        })
+    } catch (error) {
+        console.log('Error')
+    }
 });
 
 gulp.task('sprite', function () {
-    const spriteData = gulp.src('images/*.png')
+    return gulp.src(`images/*.png`)
     .pipe(imageSanitizer([
       { width: imageConfig.width },
     ]))
@@ -56,8 +71,7 @@ gulp.task('sprite', function () {
       algorithm: 'left-right',
       padding: 30
     }))
-  
-    return spriteData.pipe(gulp.dest('output/'));
+    .pipe(gulp.dest('output/'));
 });
    
 gulp.task('compress', function() {

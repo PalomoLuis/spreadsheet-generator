@@ -7,47 +7,141 @@ import imageSanitizer from 'gulp-image-sanitizer';
 
 /**
  * Cosas por hacer:
- * 1) Sprites muy grandes en jpeg se rompen
- * 2) Validar inputs de consola y dejar un valor por defecto
- * 3) Contar files y mostrare en consola la suma de la imagen completa.
+ * 1) Sprites muy grandes en jpeg se rompen //fixed!
+ * 2) Validar inputs de consola y dejar un valor por defecto //fixed!
+ * 3) Contar files y mostrare en consola la suma de la imagen completa. //fixed!
  *    Ejemplo: Si width es 100 y son 10 imágenes + 20 padding por imagen = console.log(1200);
+ * 4) Padding dinámico. //fixed!
+ * 5) Prompt que ofrezca generar jpg y png al mismo tiempo.
  */
 
-let imageConfig = {
-    width: 300,
-    type: 'jpeg',
-    jpgQuality: 75
+const filesInfo = {
+    files: 0,
+    completeSize: 0
 }
 
-gulp.task('ask', function (done) {
-    const rl = ReadLine.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
+const imageConfig = {
+    width: 300,
+    type: 'jpeg',
+    jpgQuality: 75,
+    padding: 0
+}
 
-    rl.question('Add the width of each image: ', (size) => {
-        imageConfig.width = parseInt(size);
-        console.log('Width: ' + imageConfig.width);
-        rl.question('Write "jpeg" or "png" depending on the type you want: ', (type) => {
-            imageConfig.type = type.toString();
-            console.log('Type: ' + imageConfig.type);
-            if(imageConfig.type === 'jpeg') {
-                rl.question('Write the quality from 1 to 100: ', (quality) => {
-                    imageConfig.jpgQuality = parseInt(quality);
-                    if(imageConfig.jpgQuality === NaN || imageConfig.jpgQuality === undefined) {
-                        imageConfig.jpgQuality = 70
-                    }
-                    console.log('Quality: ' + imageConfig.jpgQuality);
-                    rl.close()
-                    done()
-                })
-            } else {
-                rl.close()
-                done()
+const showCompleteInfo = ( data ) => {
+    const { filesInfo, imageConfig } = data;
+    const table = new Object();
+    table.images = filesInfo.files
+    table.imageWidth = imageConfig.width
+    table.padding = imageConfig.padding
+    table.spriteWidth = filesInfo.completeSize
+    table.type = imageConfig.type
+
+    console.table(table)
+}
+
+const countFiles = () => {
+    return new Promise((res, rej) => {
+        fs.readdir('./images', function (err, files) {
+            if(err) {
+                rej(err);
+                return;
             }
+            filesInfo.files = files.length;
+            filesInfo.completeSize = filesInfo.files * (imageConfig.width + imageConfig.padding);
+            res(filesInfo)
         })
     })
+}
+
+const rl = ReadLine.createInterface({
+    input: process.stdin,
+    output: process.stdout
 });
+
+const question = query => new Promise(res => rl.question(query, res))
+
+gulp.task('ask', async function () {
+    console.log('\n')
+    console.log('\x1b[43m%s\x1b[0m', ' Welcome to sprite generator! ')
+
+    const size = parseInt(await question('Add the width of each image: '));
+    (Number.isNaN(size) || size === undefined || size < 5 || size > 2000) ? imageConfig.width = 300 : imageConfig.width = size;
+    console.log(imageConfig.width)
+
+    const padding = parseInt(await question('Add the padding between images: '));
+    (Number.isNaN(padding) || padding === undefined || padding < 0 || padding > 500) ? imageConfig.padding = 300 : imageConfig.padding = padding;
+    console.log(imageConfig.padding)
+
+    await countFiles()
+    if(filesInfo.completeSize > 30000) {
+        console.error('\x1b[31m%s\x1b[0m', 'ERROR: The sprite width exedes the max-width')
+        gulp.stop()
+        return
+    }
+
+    const type = await question('Write "jpeg" or "png" depending on the type you want: ');
+    if(Number.isNaN(type) || type === undefined || Number.isInteger(type) || type !== 'jpeg') {
+        type !== 'png' ? imageConfig.type = 'png' : imageConfig.type = type;
+    } else { 
+        imageConfig.type = type;
+    }
+    console.log('\x1b[33m%s\x1b[0m', imageConfig.type)
+
+    let quality;
+    if (imageConfig.type === 'jpeg') {
+        quality = await question('Write the quality from 1 to 100: ');
+        (Number.isNaN(quality) || quality === undefined || quality < 1 || quality > 100) ? imageConfig.quality = 75 : imageConfig.quality = quality;
+        console.log('\x1b[33m%s\x1b[0m', imageConfig.quality)
+    }
+
+    console.log('\n')
+    console.log('Configuration:')
+    showCompleteInfo({ filesInfo, imageConfig })
+
+    rl.close()
+})
+
+// gulp.task('ask', function (done) {
+//     const rl = ReadLine.createInterface({
+//         input: process.stdin,
+//         output: process.stdout
+//     });
+
+//     rl.question('Add the width of each image: ', (size) => {
+//         if(size === NaN || size === undefined) {
+//             imageConfig.width = 300;
+//         }
+//         imageConfig.width = parseInt(size);
+//         rl.question('Add the padding between images: ', (padding) => {
+//             if(padding === NaN || padding === undefined) {
+//                 imageConfig.padding = 0;
+//             }
+//             imageConfig.padding = parseInt(padding);
+//             countFiles(filesInfo)
+//             rl.question('Write "jpeg" or "png" depending on the type you want: ', (type) => {
+//                 if(type === NaN || type === undefined) {
+//                     imageConfig.type = 'png';
+//                 }
+//                 imageConfig.type = type.toString();
+//                 if(imageConfig.type === 'jpeg') {
+//                     rl.question('Write the quality from 1 to 100: ', (quality) => {
+//                         imageConfig.jpgQuality = parseInt(quality);
+//                         if(imageConfig.jpgQuality === NaN || imageConfig.jpgQuality === undefined) {
+//                             imageConfig.jpgQuality = 70
+//                         }
+//                         showCompleteInfo({ filesInfo, imageConfig })
+//                         rl.close()
+//                         done()
+//                     })
+//                 } else {
+//                     showCompleteInfo({ filesInfo, imageConfig })
+//                     rl.close()
+//                     done()
+//                 }
+//             })
+//         })
+//     })
+// });
 
 gulp.task('create-folder', async function (cb) {
     try {
@@ -69,7 +163,7 @@ gulp.task('sprite', function () {
       imgName: `sprite.${imageConfig.type}`,
       cssName: 'sprite.css',
       algorithm: 'left-right',
-      padding: 30
+      padding: imageConfig.padding
     }))
     .pipe(gulp.dest('output/'));
 });

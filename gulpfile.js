@@ -6,13 +6,8 @@ import imagemin, { mozjpeg, optipng } from 'gulp-imagemin';
 import imageSanitizer from 'gulp-image-sanitizer';
 
 /**
- * Cosas por hacer:
- * 1) Sprites muy grandes en jpeg se rompen //fixed!
- * 2) Validar inputs de consola y dejar un valor por defecto //fixed!
- * 3) Contar files y mostrare en consola la suma de la imagen completa. //fixed!
- *    Ejemplo: Si width es 100 y son 10 imágenes + 20 padding por imagen = console.log(1200);
- * 4) Padding dinámico. //fixed!
- * 5) Prompt que ofrezca generar jpg y png al mismo tiempo.
+ * Sprite sheet generator:
+ * Takes all the files in your images folder and create a spritesheet.
  */
 
 const filesInfo = {

@@ -18,7 +18,7 @@ const imageConfig = {
 gulp.task('generate',
         gulp.series(
             () => readCurrentFolder(filesInfo),
-            () => findImageFolder(filesInfo),
+            // () => findImageFolder(filesInfo),
             () => ask(imageConfig, filesInfo),
             () => createFolder(filesInfo),
             () => sprite(imageConfig, filesInfo),

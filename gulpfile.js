@@ -47,20 +47,30 @@ async function readCurrentFolder (info = filesInfo) {
     }
 }
 
-const findImageFolder = (info = filesInfo) => {
+const findFolder = (currentLocation = filesInfo, item) => {
     return new Promise((res, rej) => {
-        fs.readdir(info.currentFolder, (err, files) => {
+        fs.readdir(currentLocation, (err, files) => {
             if(err) {
                 rej(err);
                 return;
             }
-            info.imagesFolder = files.find(folder => folder === 'images')
-            if (info.imagesFolder === undefined) {
-                info.imagesFolder = files.find(folder => folder === 'img')
-            }
-            res(info.imagesFolder)
+            let folderExist = files.find(folder => folder === item)
+            res(folderExist)
+            return true;
         }) 
     })
+}
+
+const findImageFolder = async (location, info) => {
+    if(!location) return false;
+    const locationPath = location.split('/')
+    let current = info.currentFolder
+    let checkPath = locationPath.map(async (item) => {
+        current += `/${item}`
+        findFolder(current, item)
+    })
+    if(!checkPath) return false
+    return true
 }
 
 
@@ -79,7 +89,7 @@ const countFiles = (info = filesInfo) => {
     })
 }
 
-gulp.task('fileshandler', series(readCurrentFolder, findImageFolder, countFiles))
+gulp.task('fileshandler', series(readCurrentFolder, countFiles))
 
 const rl = ReadLine.createInterface({
     input: process.stdin,
@@ -92,6 +102,19 @@ async function ask (configuration = imageConfig, info = filesInfo) {
 
     console.log('\n')
     console.log('\x1b[43m%s\x1b[0m', ' Welcome to sprite generator! ')
+
+    
+    const location = await question('Add the folder of your images (example: src/images/): ');
+    if (Number.isNaN(location) || location === undefined || location.length < 1) {
+        console.error('\x1b[31m%s\x1b[0m', 'Location invalid');
+    }
+    if (!findImageFolder(location, info)) {
+        console.error('\x1b[31m%s\x1b[0m', 'Location doesnt exist');
+        gulp.stop()
+        return
+    }
+    info.imagesFolder = location;
+    console.log('\x1b[33m%s\x1b[0m', info.imagesFolder )
 
     const size = parseInt(await question('Add the width of each image: '));
     (Number.isNaN(size) || size === undefined || size < 5 || size > 2000) ? configuration.width = 300 : configuration.width = size;

@@ -5,7 +5,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "gulp"
+    "start": "gulp",
+    "generate": "gulp --f ./index.js generate"
   },
   "author": "Luis Palomo",
   "license": "MIT",

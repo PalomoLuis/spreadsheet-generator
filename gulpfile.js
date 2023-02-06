@@ -74,7 +74,7 @@ const findImageFolder = async (location, info) => {
 }
 
 
-const countFiles = (info = filesInfo) => {
+const countFiles = (info = filesInfo, config = imageConfig) => {
     return new Promise((res, rej) => {
         fs.readdir(`${info.currentFolder}/${info.imagesFolder}`, function (err, files) {
             if(err) {
@@ -82,7 +82,7 @@ const countFiles = (info = filesInfo) => {
                 return;
             }
             info.files = files.length;
-            info.completeSize = info.files * (imageConfig.width + imageConfig.padding);
+            info.completeSize = info.files * (config.width + config.padding);
             console.log(`You have ${info.files} files to use.`)
             res(info)
         })
@@ -116,22 +116,24 @@ async function ask (configuration = imageConfig, info = filesInfo) {
     info.imagesFolder = location;
     console.log('\x1b[33m%s\x1b[0m', info.imagesFolder )
 
-    const size = parseInt(await question('Add the width of each image: '));
+    const size = parseInt(await question('Add the width of each image (300px default): '));
     (Number.isNaN(size) || size === undefined || size < 5 || size > 2000) ? configuration.width = 300 : configuration.width = size;
     console.log(configuration.width)
 
-    const padding = parseInt(await question('Add the padding between images: '));
+    const padding = parseInt(await question('Add the padding between images (0px default): '));
     (Number.isNaN(padding) || padding === undefined || padding < 0 || padding > 500) ? configuration.padding = 0 : configuration.padding = padding;
     console.log(configuration.padding)
 
-    await countFiles(info)
-    if(info.completeSize > 30000) {
+
+
+    await countFiles(info, configuration)
+    if(configuration.completeSize > 30000) {
         console.error('\x1b[31m%s\x1b[0m', 'ERROR: The sprite width exedes the max-width')
         gulp.stop()
         return
     }
 
-    const type = await question('Write "jpeg" or "png" depending on the type you want: ');
+    const type = await question('Write "jpeg" or "png" depending on the type you want (PNG default): ');
     if(Number.isNaN(type) || type === undefined || Number.isInteger(type) || type !== 'jpeg') {
         type !== 'png' ? configuration.type = 'png' : configuration.type = type;
     } else { 
@@ -141,7 +143,7 @@ async function ask (configuration = imageConfig, info = filesInfo) {
 
     let quality;
     if (configuration.type === 'jpeg') {
-        quality = await question('Write the quality from 1 to 100: ');
+        quality = await question('Write the quality from 1 to 100 (75 default): ');
         (Number.isNaN(quality) || quality === undefined || quality < 1 || quality > 100) ? configuration.quality = 75 : configuration.quality = quality;
         console.log('\x1b[33m%s\x1b[0m', configuration.quality)
     }
